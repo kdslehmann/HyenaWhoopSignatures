@@ -1,0 +1,920 @@
+---
+title: Long-distance vocalizations of spotted hyenas contain individual, but not group, signatures
+author: Kenna D. S. Lehmann, Frants H. Jensen, Andrew S. Gersick, Ariana Strandburg-Peshkin, Kay E. Holekamp
+date: "`r Sys.Date()`"
+output:
+  bookdown::word_document2:
+    reference_docx: word-styles-reference-01.docx
+    fig_caption: true
+    number_sections: false
+bibliography: [IndivandGroupSigs_bibliography.bib, packages.bib]
+csl: procB.csl
+---
+
+```{r, setup, echo=FALSE, warning=FALSE, message=FALSE}
+rm(list = ls())
+library(dplyr)
+library(randomForest)
+library(gplots)
+library(viridis)
+library(ggplot2)
+library(gridExtra)
+library(cowplot)
+library(tidyr)
+library(pander)
+library(magick)
+library(flextable)
+library(officer)
+library(officedown)
+library(webshot)
+library(here)
+library(ggpubr)
+load(here('code/4_ResultsForMarkdown_short.RData'))
+load(here('code/7_ResultsForMarkdown_repetition.RData'))
+source(here('code/1_functions.R'))
+source(here('code/IndivGroupSig_functions.r'))
+library(knitr)
+theme_set(theme_cowplot())
+
+
+
+
+```
+
+```{r, include=FALSE}
+knitr::write_bib(c(.packages(), "bookdown"), "packages.bib")
+```
+###### Page break
+# Abstract (limit 200 words)
+
+In animal societies, identity signals mediate interactions within groups, and allow individuals to discriminate group-mates from out-group competitors. However, individual recognition becomes increasingly challenging as group size increases and as signals must be transmitted over greater distances. Group vocal signatures appear to evolve when successful in-group/out-group distinctions are at the crux of fitness-relevant decisions, but individual-based recognition systems may be favored when differentiated within-group relationships are important for decision-making. Spotted hyenas are social carnivores that live in stable clans of <125 individuals composed of multiple unrelated matrilines. Clan members cooperate to defend resources and communal territories from neighboring clans and other mega carnivores; this collective defense is mediated by long-range (up to 5 km range) recruitment vocalizations, called whoops.  Here, we use machine learning to determine that spotted hyena whoops contain individual but not group signatures, and that fundamental frequency features that propagate well are critical for individual discrimination. For effective clan-level cooperation, hyenas face the cognitive challenge of remembering and recognizing individual voices at long range. We show that serial redundancy in whoop bouts increases individual classification accuracy and thus extended call bouts used by hyenas likely evolved to overcome the challenges of communicating individual identity at long distance. 
+
+## Key words
+animal communication, long-distance signals, individual signatures, group signatures
+
+# Introduction
+
+In complex animal societies, signal receivers face several categorization tasks in addition to detection; to respond adaptively to a signal, they must be able to correctly identify it as relevant or irrelevant to their own interests, and determine whether and how to respond [@Wiley2006]. These categorization tasks become more difficult as social interactions increase in complexity, as social group size increases, as unpredictable variation increases in environmental noise, or as signal transmission is otherwise compromised. These factors make animal communication particularly challenging in fission-fusion societies, where individuals are often widely dispersed. How then do signals evolve to be easily detected and distinguishable enough to transfer relevant information among many individuals in a complex, dispersed social group?
+
+In large groups with both differentiated relationships within groups and competition both within and among groups, receivers often need to know the identity or group-membership of the caller because it is necessary for receivers to tailor their response to the current situation [@Reeve1989]. When the identity of the signaling individual is important [@Wiley2013; @Tibbetts2007; @Johnstone1997], signals should emphasize individually distinctive information [@Bradbury1998]. For example, signature whistles in bottlenose dolphins are unique to individuals [@Caldwell1965] and stable across decades [@Bruck2013], allowing male dolphins to form and maintain complicated multi-level cooperative relationships [@Connor1992; @Connor2015]. However, individual recognition becomes increasingly challenging as group size increases because the larger signal set becomes increasingly difficult to discriminate [@Cary2003; @Nolte1967]. In many species (e.g. chimpanzees [@Crockford2004], green wood hoopoes [@Radford2005], orca whales [@Ford1991; @Yurk2002] and sperm whales [@Weilgart1997; @Gero2016]) one or more signals encode information on the group-membership of the caller (i.e. "group signature"), either in the absence of, or in addition to individual identity signatures [@Bradbury1998]. Thus, we expect group vocal signatures to evolve when groups are large and successful in-group/out-group distinctions are at the crux of fitness-relevant decisions, while individual recognition systems may be selected for when relationships *within* groups require further decision-making because relationships vary among group-mates or change quickly over time.
+
+An additional problem arises when individual or group identity information must be transmitted over long distances. In such cases, information is predicted to be encoded in call features that are most robust to sound propagation. Therefore, long-distance acoustic signals should be tonal because pure tones travel better than broadband noise, which is susceptible to scattering [@Wiley1978]. Since loss of energy due to sound absorption increases with frequency, and since tonal signals are less susceptible to scattering [@Wiley1978] long-range calls tend to be tonal, low-frequency signals. Long-range propagation also leads to increased signal reverberation from reflections and refraction, favoring information encoded in frequency modulations rather than amplitude modulations [@Wiley1978;@Marten1977]). Distinctive voice features that might allow for recognizing individuals at short range, such as subtle differences in formant spacing shaped by vocal tract filtration [@Taylor2010], are unlikely to be useful for long-range identification of callers.
+
+To maximize detection and improve discrimination, signalers can increase amplitude, avoid noise either in time or signal space, or increase redundancy in a signal (summarized in @Wiley2006), but not all these strategies are options for long-distance signalers. Signals that are optimized for long-range transmission often operate near physiological amplitude limits already, and senders seldom have much control over noise conditions, especially for distant receivers. In contrast, signal redundancy via repetition [@Higham2013; @Hebets2016] is likely low cost and this call feature is under behavioral control. Here we inquire whether spotted hyenas (*Crocuta crocuta*) have individual signatures, group signatures, neither, or both in the their long-distance vocalizations.
+
+Spotted hyenas are large carnivores that live in social groups, called 'clans,' which may contain up to 125 members in the prey-rich plains of eastern Africa [@Holekamp2010; @Green2018]. There clan members cooperate to defend a communal territory and other critical resources against neighboring clans and other large carnivores (13-76 km<sup>2</sup>, @Holekamp2010). Each clan contains multiple unrelated matrilines of females and their offspring, as well as one or more immigrant males that sire most young [@Engh2002]. Female hyenas are philopatric, but most males disperse from their natal clan to join a new clan at 2 to 6 years of age [@Kruuk1972; @Frank1986I; @Mills1990; @Smale1997]. Each hyena clan is structured by a strict linear dominance hierarchy [@Frank1986II] where social rank determines priority of access to resources. Relationships among clan-mates thus vary based on rank, sex, age, and kinship. These dynamic relationships are further complicated by the fission-fusion nature of hyena clans [@Aureli2008; @Couzin2009]. Although clan membership is largely stable over time, individuals and sub-groups break apart and come together many times during a day at myriad locations within the clan territory [@Smith2008]. 
+
+The long-distance call of spotted hyenas, the whoop vocalization, has multiple hypothesized functions [@Kruuk1972], including recruitment and coordination of movements by clan-mates within their territory [@Gersick2015; @Theis2007], sexual advertisement [@East1991a], finding specific group-mates [@Holekamp1999], and territory maintenance [@Mills1990; @BensonAmram2011]. The whoop vocalization is loud and can be heard up to 5 km away [@Kruuk1972; @East1991]. It is most often emitted in bouts that range from 2 to 34 whoops [@East1991] and each whoop is a harmonic, frequency-modulated, tonal call. At least at short range, mothers recognize and respond strongly to the whoops of their young offspring [@Holekamp1999] and individual distinctiveness in cub whoops appears to extend into adulthood [@East1991a]. The fundamental frequency of a whoop provides reliable information about the caller's age class and, for adult callers, information about sex as well [@Theis2007]. Thus, whoops appear to encode information about the caller's age, sex, location, affective state, and individual identity.
+
+To effectively defend their key resources and compete against other large carnivores, hyenas rely on long-distance communication to coordinate a large number of clan members dispersed over an expansive territory. Given the large clan size (far beyond typical group size for both wolves and sperm whales) and the need for effective discrimination of clan-mates for cooperative territory defense, we inquire whether, like wolves [@Zaccaroni2012], hyenas have evolved a group-specific label to simplify the cognitive challenge of identifying clan members at long range?
+
+Here, we use machine learning to test whether the hyenas' long-distance vocalizations contain group and/or individual signatures, and to identify call features that can facilitate discrimination. We then use these results to quantify how serial redundancy in extended whoop bouts can affect individual classification accuracy. Finally, we discuss the implications of these findings for understanding signal evolution and acoustic communication in large, socially complex, and spatially dispersed species.
+
+
+# Methods
+
+## Study animals and call recordings
+
+We recorded whoops emitted by spotted hyenas from four clans monitored by the Mara Hyena Project in the Maasai Mara National Reserve, Kenya (Figure S1). We identified all members of each clan by their unique spot patterns, assigned birthdates (± 7 days) to natal animals based on cub appearance when first seen [@Holekamp1996], and assigned a sex to each individual based on the shape of the glans of its erect phallus [@Frank1990].
+
+We obtained recordings of whoop vocalizations in two ways (Figure S2). First, observers deployed recording equipment from the windows of off-roading vehicles used as mobile blinds. Second, custom-made sound-, movement-, and position-recording collars  were deployed from Janurary to March 2017 on five adult females from the Talek West clan. Collars consisted of a custom-built DTAG board [@Johnson2003; @Johnson2009] capable of recording audio, accelerometer, and magnetometer data integrated with a GPS board (Gipsy 5; Technosmart, Italy) and mounted onto a Tellus Medium collar (Followit Sweden AB). Recording methods are indicated for each whoop in Table S1. 
+
+We isolated whoop bouts from both types of digital field recordings, noted the time, date, and identity of the calling hyena and matched this information with the age, sex, and clan membership of the caller. We then cut each whoop bout into single whoops for analysis (Figure \@ref(fig:spectrogram-panel)), using only whoops from adult hyenas that were at least 24 months old, and thus reproductively mature hyenas [@Glickman1992] to eliminate the possibility that young hyenas might not yet have learned a potential group signature.
+
+We classified whoops into four types (Figure \@ref(fig:spectrogram-panel)a) based on a classification scheme modified from East and Hofer [@East1991]. Preliminary whoops (P type) are often emitted at the beginning of the whoop bout and are typically very short relative to other whoops in the bout. Symmetric (S type) whoops resemble a flattened bell curve, with the peak frequency near the center of the call. In contrast, asymmetric (A type) whoops have a long constant frequency portion that rises to peak frequency toward the end of the call. Terminal (T type) whoops are often the last whoop in a bout. They maintain a relatively constant, low frequency, and are often of lower amplitude than the other whoops in the bout [@East1991a].
+
+\endLandscape
+
+```{r, spectrogram-panel, echo=FALSE, warning=FALSE, dpi=500, fig.cap="(A) shows a spectrogram of an exemplar whoop bout (resolution 17.1ms x 3 Hz, 90 dB dynamic range) with all four whoop types labelled either 'S' (symmetric), 'A' (asymmetric), or 'T' (terminal) based on East (1991), and the addition of a 'P' (preliminary) whoop category. (B) depicts an exemplar S type whoop, with call features labeled, including the 'CF' or 'constant frequency' portion of the whoop. (C) and (D) illustrate call features acquired from spectral and cepstral analyses respectively. See Methods for information on call parameters."}
+
+ggdraw() + draw_image(here('doc/premadefigs/lehman_methods_v2.jpg'), halign=0, width=1) 
+
+
+```
+
+\endPortrait
+
+## Acoustic processing and feature extraction
+
+Recordings were resampled to a common sample rate of 32 kHz. Each signal was then processed individually using custom-written software in Matlab 2019a [@MATLAB2019] to extract a range of acoustic parameters (Table \@ref(tab:parameter-table), See Supplement for full details). 
+
+
+
+
+```{r, parameter-table, echo=FALSE, tab.cap='Acoustic features extracted from each whoop.'}
+parameters <- read.table(here('data/parameter_table.txt'), head=TRUE, sep=',')
+
+parameters <- flextable(parameters)
+parameters <- bold(parameters, part="header")
+parameters <- autofit(parameters)
+parameters <- align(parameters, align='center', part='all')
+parameters
+
+```
+
+
+## Using random forests to predict clan membership and individual identity
+To test whether whoops contain clan and/or individual signatures, we trained random forest classifiers [@Breiman2001] to predict either clan or individual identity based on the set of extracted acoustic features. Random forest classification is a supervised machine learning algorithm that uses a set of decision trees (i.e. a 'forest') to classify objects that are represented by measured features of the objects. Each tree in a forest attempts to parsimoniously split the training objects into the correct categories based on a random subset of object features, and a majority rule is used to produce a final ensemble classification across trees.
+
+### Testing the clan signature hypothesis
+We first tested whether spotted hyenas use generalizable acoustic features that help differentiate clan identity from whoops irrespective of individual identity. To investigate this, we split our full dataset (n=`r nrow(whoopsPAST_C)` whoops from `r length(unique(whoopsPAST_C$hyena.id))` hyenas in 4 clans; Table S1) into a test dataset consisting of  all whoops from a randomly selected hyena from each clan, and a training dataset consisting of whoops from all other hyenas (Figure S \@ref(fig:random-forest)a). We then trained a random forest classifier with 500 decision trees with the number of nodes set to the size of the training set, and measured the classification accuracy as the number of correctly identified whoops in the test dataset. This resulted in the whoops of any single hyena being in either the test or training dataset, but not both, thus preventing the classifier from learning the characteristics of individual hyenas and ensuring that accuracy only reflects features that generalize across hyenas within a clan. To assess the accuracy of predictions, we repeated this process 1000 times, with a random hyena from each clan selected for the test data each time. 
+
+Since animals varied in their number of recorded whoops, each random selection of test individuals resulted in a different proportion of correctly assigned whoops due to chance. As a null model, we therefore calculated a weighted expectation (WE), which is the expected proportion correct due to chance alone. 
+
+Because most male hyenas disperse from their natal clans [@Smale1997; @Honer2007], males may retain their natal group signature instead of learning the vocal signature of the clan in which we recorded them. We tested for this possibility by rerunning separate analyses with males only or with females only.
+
+### Testing the individual signature hypothesis
+To test whether whoops are individually distinct, we reduced the dataset to all hyenas having two or more whoop bouts (and excluded one additional female because her whoop bouts were unusually short, Supplementary Table 1). To prevent the random forest from assigning individual identity based on autocorrelated variation present within a whoop bout instead of common variation among an individual's whoop bouts, we held out one bout from each individual for the test dataset and used the remaining whoops as training data (Figure S \@ref(fig:random-forest)b). As before, we then trained a random forest classifier with 500 trees to predict individual identity on the training dataset, and measured performance as the fraction of whoops in the test dataset with correctly assigned individual identity. We repeated this procedure 1000 times, each time withholding a randomly selected whoop bout from each individual for the test dataset. As above, a weighted expectation probability was calculated as the fraction of whoops that would be correctly assigned to the individual by chance. 
+
+To test the possibility that individual classification accuracy was influenced by recording method, we ran this analysis separately on data from microphone recordings and collar recordings. We also reran the random forest analysis with males and females separated to determine whether one sex has more individually distinctive whoops than the other.
+
+Because whoop type affected the accuracy of assignment, we created a dataset of only A and S type whoops and retested both clan and individual signature hypotheses (Table S\@ref(tab:datasets)). Finally, we calculated importance as the mean decrease in individual classification accuracy when each feature is excluded from the classification model using the "importance" function from the randomForest package (Table \@ref(tab:parameter-table)). Confusion matrices for all random forest analyses can be found in the Supplementary Materials.
+
+### Testing whether signal redundancy improves caller identification
+
+Finally, we investigated how the sequential nature of natural whoop bouts influences classification accuracy and thus might help alleviate uncertainty about caller identity. To do this, we simulated a receiver's likelihood of assigning a whoop bout to the correct caller based on multiple whoops in the bout. Within a random forest model, we calculated each test bout's accuracy by calculating the proportion of decision trees that classified each bout to each of the hyenas in the dataset given one whoop, two whoops, etc. This gave us a 'probability' that each bout belongs to each hyena for each number of whoops within the bout. 
+
+We then calculated the average correct probability across all the random forest models to account for variations in prediction accuracy from using different whoops for training and testing. This analysis used the random forests trained with only 'A' and 'S' whoops but otherwise maintained the natural order of whoops within the bout.
+
+All analyses and figures were generated in RStudio with `r R.version.string`[@R-base] and Bookdown `r packageVersion('bookdown')` [@R-bookdown]. We analyzed data using the tidyR `r packageVersion('tidyR')`[@R-tidyr] and randomForest `r packageVersion('randomForest')`[@R-randomForest] packages, and created figures using gplots `r packageVersion('gplots')`[@R-gplots], ggplot2 `r packageVersion('ggplot2')`[@R-ggplot2], and cowplot `r packageVersion('cowplot')`[@R-cowplot]. Diagrams were created in Powerpoint and colors were generated from viridis `r packageVersion('viridis')`[@R-viridis]. 
+
+# Results
+
+In conflict with predictions of the group signature hypothesis, the random forest model for assigning clan membership was no more accurate than expected by chance (Figure \@ref(fig:violin-plot-by-clan), mean: `r round(mean(violin.clan.AS$per_correct[violin.clan.AS$forest=='RF']), digits=2)`, sd: `r round(sd(violin.clan.AS$per_correct[violin.clan.AS$forest=='RF']), digits=3)`, chance: `r round(mean(violin.clan.AS$per_correct[violin.clan.AS$forest=='WE']), digits=2)`), and neither sex of the calling animals (Figure \@ref(fig:violin-plot-by-clan)b) nor whoop type (Figure \@ref(fig:violin-plot-by-clan)c) had any influence on clan identification. 
+
+In contrast, the random forest model for assigning individual identity was much more accurate than expected by chance (Figure \@ref(fig:violin-plot-by-ind), mean: `r round(mean(violin.ind.AS$per_correct[violin.ind.AS$hyena=='RF']), digits=2)`, sd: `r round(sd(violin.ind.AS$per_correct[violin.ind.AS$hyena=='RF']), digits=3)`, chance: `r round(mean(violin.ind.AS$per_correct[violin.ind.AS$hyena=='WE']), digits=2)`). Again, these results held true regardless of sex or recording method, even with the reduced sample sizes in these datasets (Figure \@ref(fig:violin-plot-by-ind)c). 
+
+The accuracy of individual assignment did vary with whoop type (with A, S and P assigned more accurately than T, Figure \@ref(fig:violin-plot-by-ind)b) and final analyses were conducted with only 'A' and 'S' type whoops (Figures \@ref(fig:violin-plot-by-clan)c and \@ref(fig:violin-plot-by-ind)c). The accuracy of assignment to clan and individual varied considerably among the clans (Figure \@ref(fig:violin-plot-by-clan)d) and individual callers (Figure \@ref(fig:violin-plot-by-ind)e).  
+
+```{r, violin-plot-by-clan, echo=FALSE, warning=FALSE, fig.height=6.5, fig.width=6.5, dpi=500, fig.cap="Lack of clan signatures in single whoops. Violin plots of proportion of test data correctly assigned to clan from 1000 random forests. (*A*) Comparing random weighted expectation (WE) to performance of the random forest overall (RF), using all whoop types. (*B*) Comparing WE and RF for datasets composed of whoops from females only and males only. (*C*) Comparing WE and RF using only 'A' and 'S' type whoops. (*D*) Random forest accuracy of test data for each hyena clan, using only 'A' and 'S' type whoops. Points and bars represent means and standard deviations of random forest accuracy. Dotted line indicates mean random weighted expectation for that dataset."}
+
+# create panelA with all whoops 
+violin.clan.PAST.WERF <- subset(violin.clan.PAST, forest=='WE' | forest=="RF")
+violin.clan.PAST.WERF$forest <- factor(violin.clan.PAST.WERF$forest, levels=c("WE", "RF"))
+
+samplesize <- nrow(whoopsPAST_C)
+samplesize <- paste0("n=", samplesize)
+
+figure.violin.clan.A <- ggplot(violin.clan.PAST.WERF, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.9) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('proportion correct') +
+  ylim(-.1,1.05) + theme_classic(base_size = 14) +
+  theme(legend.position = c(.11,.75)) +
+  geom_hline(yintercept = mean(violin.clan.PAST$per_correct[violin.clan.PAST=='WE'], na.rm=TRUE), linetype='dotted') +
+  geom_label(x=1.5, y=1.04, label="   all whoops   ", label.r = unit(0,'lines'), label.padding = unit(0.4, 'lines'), label.size = 0.5) +
+  annotate('text', x=2, y=0.8, label=samplesize) 
+
+# create panelB with all whoops but only females and males
+violin.clan.PAST.females$sex <- "females only"
+violin.clan.PAST.males$sex <- "males only"
+violin.clan.PAST.FM <- bind_rows(violin.clan.PAST.females, violin.clan.PAST.males)
+
+violin.clan.PAST.FM$forest <- factor(violin.clan.PAST.females$forest, levels=c("WE", "RF"))
+
+means <- violin.clan.PAST.FM[violin.clan.PAST.FM$forest=="WE",] %>%
+  group_by(sex) %>%
+  summarise(mean_value = mean(per_correct))
+
+samplesizef <- nrow(whoopsPAST_C_female)
+samplesizef <- paste0("n=", samplesizef)
+samplesizem <- nrow(whoopsPAST_C_male)
+samplesizem <- paste0("n=", samplesizem)
+samplesize <- data.frame(ss=c(samplesizef, samplesizem), sex=c("females only", "males only"))
+
+figure.violin.clan.B <- ggplot(violin.clan.PAST.FM, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.9) + 
+  facet_grid(.~sex) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('') +
+  ylim(-.1,1.05) + theme_classic(base_size = 14) +
+  geom_hline(data=means, aes(yintercept=mean_value), linetype='dotted') +
+  geom_text(data=samplesize, aes(label=ss), x=2, y=0.8)
+
+#create panel C and D with AS whoops
+violin.clan.AS$forest <- factor(violin.clan.AS$forest, levels=c("WE", "RF","HZ","SN","SS","TW"))
+
+violin.clan.AS.WERF <- subset(violin.clan.AS, forest=='WE' | forest=="RF")
+violin.clan.AS.clans <- subset(violin.clan.AS, forest!='WE' & forest!="RF")
+
+samplesize <- nrow(whoopsAS_C)
+samplesize <- paste0("n=", samplesize)
+
+# panel C showing just WE and RF
+figure.violin.clan.C <- ggplot(violin.clan.AS.WERF, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.9) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('proportion correct') +
+  ylim(-.1,1.05) + theme_classic(base_size = 14) +
+  geom_hline(yintercept = mean(violin.clan.AS$per_correct[violin.clan.AS=='WE'], na.rm=TRUE), linetype='dotted') +
+  geom_label(x=1.5, y=1.04, label="    A and S whoops only    ", label.r = unit(0,'lines'), label.padding = unit(0.4, 'lines'), label.size = 0.5) +
+  annotate('text', x=2, y=0.8, label=samplesize)
+
+# panel D showing clans
+samplesize <- table(whoopsAS_C$clan)
+samplesize <- paste0("n=", samplesize)
+
+
+figure.violin.clan.D <- ggplot(violin.clan.AS.clans, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.9) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('') +
+  ylim(-.1,1.05) + theme_classic(base_size = 14) +
+  geom_hline(yintercept = mean(violin.clan.AS$per_correct[violin.clan.AS=='WE'], na.rm=TRUE), linetype='dotted') +
+  annotate('text', x=1:4, y=1.05, label=samplesize)
+
+
+ggarrange(figure.violin.clan.A, figure.violin.clan.B, figure.violin.clan.C, figure.violin.clan.D, 
+          ncol=2, nrow=2, labels=c("A", "B", "C", "D"))
+
+```
+
+```{r, violin-plot-by-ind, echo=FALSE, warning=FALSE, fig.height=8, fig.width=8.5, dpi=500, fig.cap="Individual signatures in single whoops. Violin plots of the proportion of test data correctly assigned to individual from 1000 random forests. (*A*) Comparing random weighted expectation (WE) to performace of the random forest overall (RF), using all whoop types. (*B*) Random forest accuracy by whoop type. (*C*) Comparing WE and RF for datasets composed of collar recordings only, microphone recordings only, females only, and males only. (*D*) Comparing WE and RF using only 'A' and 'S' type whoops. (*E*) Random forest accuracy for individual hyenas, using only 'A' and 'S' type whoops. Points and bars represent means and standard deviations of random forest accuracy. Dotted line indicates mean random weighted expectation for that dataset."}
+
+## Subplot A, 
+violin.ind.PAST.WERF <- subset(violin.ind.PAST, forest=='WE' | forest=="RF")
+violin.ind.PAST.WERF$forest <- factor(violin.ind.PAST.WERF$forest, levels=c("WE", "RF"))
+
+samplesize <- nrow(whoopsPAST_I)
+samplesize <- paste0("n=", samplesize)
+
+figure.violin.ind.A <- ggplot(violin.ind.PAST.WERF, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.5) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('proportion correct') +
+  ylim(0,1.05) + theme_classic(base_size = 14) +
+  geom_hline(yintercept = mean(violin.ind.PAST$per_correct[violin.ind.PAST$forest=='WE'], na.rm=TRUE), linetype='dotted') +
+  geom_label(x=1.5, y=1.02, label="   all whoops   ", label.r = unit(0,'lines'), label.padding = unit(0.4, 'lines'), label.size = 0.5) +
+  annotate('text', x=2, y=0.8, label=samplesize) 
+  
+
+## Subplot B, accuracy by whooptype
+whoopsPAST_I$wp.type <- factor(whoopsPAST_I$wp.type, levels=c("P","A","S","T"))
+
+samplesize <- whoopsPAST_I %>%
+  group_by(wp.type) %>%
+  summarize(n=n())
+
+samplesize$n <- paste0("n=", samplesize$n)
+
+whooptype_accuracies.indiv.PAST$whoop_type <- factor(whooptype_accuracies.indiv.PAST$whoop_type,
+                                                     levels=c("P","A","S","T"))
+
+figure.violin.whoop.accuracies.B <- 
+  ggplot(whooptype_accuracies.indiv.PAST, 
+         aes(x=whoop_type, y=percent_correct)) +
+  geom_violin(trim=TRUE, width=1.5) +
+  stat_summary(fun.data=data_summary) +
+  xlab('whoop type') +
+  ylab('') + theme_classic(base_size = 14) +
+  ylim(0,1.05) +
+  geom_hline(yintercept = mean(violin.ind.PAST$percent_correct[violin.ind.PAST$hyena=='WE'], na.rm=TRUE),
+             linetype='dotted') +
+  geom_text(data=samplesize, aes(label=n), x=1:4, y=1.05)
+
+## Subplot C, PAST dataset showing mic/collar/male/female only
+violin.ind.PAST.col <- violin.ind.PAST.col %>%
+  subset(forest=="WE" | forest=="RF") %>%
+  select(forest, per_correct)
+violin.ind.PAST.col$splitted <- "collar only"
+
+violin.ind.PAST.mic <- violin.ind.PAST.mic %>%
+  subset(forest=="WE" | forest=="RF") %>%
+  select(forest, per_correct)
+violin.ind.PAST.mic$splitted <- "mic only"
+
+violin.ind.PAST.female <- violin.ind.PAST.female %>%
+  subset(forest=="WE" | forest=="RF") %>%
+  select(forest, per_correct)
+violin.ind.PAST.female$splitted <- "females only"
+
+violin.ind.PAST.male <- violin.ind.PAST.male %>%
+  subset(forest=="WE" | forest=="RF") %>%
+  select(forest, per_correct)
+violin.ind.PAST.male$splitted <- "males only"
+
+violin.ind.PAST.splitted <- bind_rows(violin.ind.PAST.col, violin.ind.PAST.mic, 
+                                   violin.ind.PAST.female, violin.ind.PAST.male)
+violin.ind.PAST.splitted$forest <- factor(violin.ind.PAST.splitted$forest, levels=c("WE", "RF"))
+
+means <- violin.ind.PAST.splitted[violin.ind.PAST.splitted$forest=="WE",] %>%
+  group_by(splitted) %>%
+  summarise(mean_value = mean(per_correct))
+
+samplesize <- data.frame(ss=c(nrow(whoopsPAST_I_collar), nrow(whoopsPAST_I_mic), 
+                              nrow(whoopsPAST_I_female), nrow(whoopsPAST_I_male)),
+                         splitted=c("collar only", "mic only", "females only", "males only"))
+samplesize$ss <- paste0("n=", samplesize$ss)
+
+figure.violin.clan.C <- ggplot(violin.ind.PAST.splitted, aes(x=forest, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.5) + 
+  facet_grid(~factor(splitted, levels=c("collar only", "mic only", "females only", "males only"))) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('proportion correct') +
+  ylim(0,1.05) + theme_classic(base_size = 14) +
+  geom_hline(data=means, aes(yintercept=mean_value), linetype='dotted') +
+  geom_text(data=samplesize, aes(label=ss), x=2, y=0.8)
+
+
+### Subplot D, showing AS results.
+violin.ind.AS.master <- subset(violin.ind.AS, hyena=='RF'| hyena=='WE')
+violin.ind.AS.hyenas <- subset(violin.ind.AS, hyena!='RF' & hyena!='WE')
+
+figure.violin.ind.AS.master <- ggplot(violin.ind.AS.master, aes(x=hyena, y=per_correct)) +
+  geom_violin(trim=TRUE, width=1.5) +
+  stat_summary(fun.data=data_summary) +
+  xlab('') +
+  ylab('') + 
+  ylim(0,1.05) + 
+  theme_classic(base_size = 14) +
+  geom_hline(yintercept =
+               mean(violin.ind.AS$per_correct[violin.ind.AS$hyena=='WE'],
+                    na.rm=TRUE), linetype='dotted') +
+  geom_label(x=1.5, y=1.02, label="   A and S whoops   ", label.r = unit(0,'lines'), label.padding = unit(0.4, 'lines'), label.size = 0.5) +
+  annotate('text', label=paste0("n=", nrow(whoopsAS_I)), x=2, y=0.8)
+
+### subplot E showing AS results by individual
+violin.ind.AS.hyenas$sex_status[violin.ind.AS.hyenas$sex_status=='F'] <- 'female'
+violin.ind.AS.hyenas$sex_status[violin.ind.AS.hyenas$sex_status=='M'] <- 'male'
+violin.ind.AS$sex_status <- factor(violin.ind.AS$sex_status, levels=c('female','male'))
+
+samplesize <- whoopsAS_I %>%
+  group_by(hyena) %>%
+  summarize(n=n())
+
+samplesize$n <- paste0("n=", samplesize$n)
+
+figure.violin.indiv.AS.hyenas <- ggplot(violin.ind.AS.hyenas, aes(x=hyena, y=per_correct, color=sex_status)) +
+  geom_violin(trim=TRUE, width=1.5) +
+  stat_summary(fun.data=data_summary) +
+  theme_classic(base_size = 14) +
+  theme(legend.position = 'right', legend.title=element_text(size=12),
+        legend.text = element_text(size=8), plot.margin = margin(t=0, r=0, b=0, l=0, unit="cm")) +
+  scale_color_manual(values=c("#471164FF", "#3B528BFF")) +
+  labs(color='sex') +
+  xlab('hyena') +
+  ylab('proportion correct') +
+  ylim(0,1.05) + 
+  geom_hline(yintercept = 
+               mean(violin.ind.AS$per_correct[violin.ind.AS$hyena=='WE'], na.rm=TRUE), 
+             linetype='dotted') +
+  geom_text(data=samplesize, aes(x= hyena, label=n), x=1:12, y=1.05, inherit.aes = FALSE)
+
+
+# plot the entire figure
+ggarrange(ggarrange(figure.violin.ind.A, figure.violin.whoop.accuracies.B, ncol=2, labels=c("A","B")), 
+          ggarrange(figure.violin.clan.C, figure.violin.ind.AS.master, ncol=2, widths=c(2,1), labels=c("C", "D")),
+          ggarrange(figure.violin.indiv.AS.hyenas, labels = c("E")),
+          nrow=3, ncol=1)
+
+```
+
+Some call features were more important than others for correctly predicting individual caller identity (Figure \@ref(fig:featureimportance-indiv)). The top features were: the mean frequency of the constant frequency portion of the whoop, the maximum frequency, and the call duration.
+
+```{r, featureimportance-indiv, echo=FALSE,  warning=FALSE, message=FALSE, fig.height=3, fig.width=4, dpi=200,  message=FALSE,fig.cap="The importance of each whoop feature in predicting individual identity. Feature importance is measured as the mean decrease in accuracy when that feature is removed from the random forest analysis. See Table 1 for full feature names and descriptions."}
+n.fits <- 1000
+par(mar=c(2,7,1,1), ps=10, cex.axis=.7, cex.lab=.8, mgp=c(2,0.25,0))
+figure.feature.importance.ind <- plot(
+  NULL,
+  xaxt = 'n',
+  yaxt = 'n',
+  xlim = c(0,0.14),
+  ylim = c(1, length(predictors.to.use)),
+  xlab = '',
+  ylab = ''
+)
+for (i in 1:n.fits) {
+  points(
+    importances.ranked[i, ],
+    1:length(predictors.to.use),
+    pch = 19,
+    cex = 0.3,
+    col = "#21908CFF"
+  )
+}
+points(
+  mean.importances.ranked,
+  1:length(predictors.to.use),
+  pch = 17,
+  cex = 1,
+  col = "#440154FF"
+)
+mtext(
+  paste(names.ranked, '   '),
+  side = 2,
+  at = 1:length(predictors.to.use),
+  las = 1,
+  cex=.8
+)
+axis(side=1, at=seq(0,0.14, 0.02))
+title(xlab="feature importance", line=1)
+figure.feature.importance.ind
+```
+
+Our analysis of whoop redundancy within a bout supported the hypothesis that the repetitive nature of the whoop bout increases receiver certainty about the identity of the caller. With more whoops in a bout, the proportion of correct guesses increases, although not at the rate expected if all whoops are equally informative (Figure \@ref(fig:repetition-accuracy)).
+
+```{r, repetition-accuracy, echo=FALSE,  warning=FALSE, fig.height=5, fig.width=6, dpi=400, fig.cap="The sequential nature of whoop bouts increases assignment accuracy. The expected proportion of correct guesses of caller identity improves with number of whoops examined in the bout based on the random forest predictions (solid grey line). The average accuracy as a function of the number of whoops in a bout given the null hypothesis that whoops are uninformative (dashed grey line) and given that each whoop is equally informative (using the average accuracy of the 1000 random forests trained with 'A' and 'S' type whoops: black)."}
+# removed subplot A showing the variation accuracies among the bouts.
+# whoop.ordered.seq <- whoop.ordered.seq[,1:13]
+# plot.features <- data.frame(matrix(NA, nrow=nrow(whoop.ordered.seq), ncol=1))
+# plot.features$whoop.joint.id <- rownames(whoop.ordered.seq)
+# plot.features$hyena.col <- NA
+# plot.features$line.type <- NA
+# mean.ordered.seq <- colMeans(whoop.ordered.seq, na.rm=TRUE)
+# #Get the hyena and whoop number
+# for (i in 1:nrow(plot.features)){
+#   temp <- unlist(strsplit(plot.features$whoop.joint.id[i], split='_'))
+#   plot.features$hyena.col[i] <- temp[1]
+#   plot.features$line.type[i] <- temp[2]
+# }
+# 
+# hyenas <- unique(plot.features$hyena.col)
+# ncolors <- length(hyenas)
+# 
+# for (i in 1:ncolors) {
+#   plot.features$hyena.col[plot.features$hyena.col==hyenas[i]] <- viridis(ncolors)[i]
+# }
+# par(mfrow=c(2,1), mar = c(5, 5, 1, 1), ps=10)
+# figure.ordered.seq <- matplot(t(whoop.ordered.seq), type='l', col = plot.features$hyena.col,
+#                               lwd=3, xlab='number of whoops in bout', xlim=c(1,13),
+#                               ylab='individual classification accuracy', axes=F)
+#   legend(11.5,0.8, legend=unique(whoopsAS_I$hyena) , fill=unique(plot.features$hyena.col), bty='n', cex=.8)
+#   axis(2)
+#   axis(side=1, at=1:ncol(whoop.ordered.seq), labels=0:12)
+#   mtext("A", at=c(-.5), font=2)
+
+hyenas <- unique(whoopsAS_I$hyena)
+mean.ordered.seq <- repetition.df %>% 
+  group_by(call.num) %>%
+  summarise(meanacc=mean(prob.correct))
+
+# Plot the hypotheses
+null.h <- rep(1/length(hyenas), length(hyenas)+1)
+hypotheses <- data.frame(whoop_num=1:(length(hyenas)+1), mean_seq=mean.ordered.seq, null.h)
+hypotheses$info <- 1-(1-mean(violin.ind.AS$per_correct[violin.ind.AS$hyena=='RF']))^(hypotheses$whoop_num-1)
+hypotheses$info[1] <- 1/length(hyenas)
+
+plot(hypotheses$whoop_num, hypotheses$mean_seq.meanacc, type='b', col='black', lwd=3, 
+     xlab='number of whoops in bout', xlim=c(1,13),
+     ylab='individual classification accuracy', ylim=c(0,1),  axes=F)
+  axis(side=2,)
+  axis(side=1, at=1:13, labels=0:12)
+  lines(hypotheses$whoop_num, hypotheses$info, type='l', col='grey', lwd=3)
+  lines(hypotheses$whoop_num, hypotheses$null.h, type='l', lty=2, col='grey', lwd=3)
+  text(10, .95, labels='whoops are equally informative')
+  text(10.5, .12, labels='whoops are uninformative')
+  text(9, .50, labels='average random forest accuracy')
+  
+
+
+```
+
+
+
+# Discussion
+
+## Individual but not group signatures 
+
+Theory predicts that species will evolve signals that meet their minimum needs [@Wiley2013] while using as few categories of signals as possible to maximize detection and discrimination [@Wiley2006]. Given the size [@Holekamp2010; @Green2018], dynamic membership, and spatial dispersion of hyena groups, they are a strong candidate species for a group signature. This group signature would allow hyenas to categorize callers to ‘clan-mate or not,’ thereby facilitating the coordination and recruitment of clan-mates and detection of territory intruders. We found multiple call features that facilitate individual discrimination, but no evidence of a group-level signature. This suggests several possibilities about the relationship between hyenas’ fitness-critical needs and the resultant structure of their communication: (1) recognition of large numbers of group-mates by voice alone may not be as costly as expected; (2) group signatures may be more costly than expected; (3) group signatures may not meet hyenas’ minimum needs, nor any need beyond those already met by individual signatures.
+
+There is some evidence that vocal recognition of many individuals is not costly enough to require the categorical reduction that group signatures would provide. While it is difficult to determine experimentally the number of voices recognized by humans, we do know that humans can accurately distinguish a large number of individuals from voice alone [@Hollien1982; @VanLancker1985; @Ladefoged1980; @Wenndt2012]. In addition, several studies in non-human animals have demonstrated individual vocal recognition [@DAmelio2017; @Blumstein2004; @Rendall1996; @Cheney1988; @Sharpe2013; @Kondo2010] (although see @Bergman2010). Some species are clearly capable of recognizing numerous individual callers (approximately 100 individuals in African elephants @McComb2000) and even associate callers with traits lying on multiple axes (such as rank and kinship [@Bergman2003; @Schino2006]). Hyenas clearly have the cognitive capacity to recognize and remember clan-mates as individuals [@Kruuk1972; @Mills1990; @Holekamp2007]; perhaps the development of a group signature is more costly than the memory required to recognize 125+ voices.
+
+Evolving a group signature would also require concurrent evolution of flexible vocal production learning [@Sewall2016], a relatively rare trait in animals [@Seyfarth2010]. Without this trait, an individual would be unable to learn and produce a new group signature after changing groups. During clan fission [@Holekamp1993] and male immigration [@Smale1997; @Honer2007], hyenas would need to learn how to produce the group signature of their new clan. Although hyenas might be capable of flexible vocal production, our results suggest that a group signature is not the impetus. Instead, the individual signatures we detected would rely on hyenas’ associative learning and flexible vocal comprehension [@Seyfarth2010]. Male hyenas especially may have to learn to recognize the individually distinct calls of an entirely new suite of group-mates while other animals in a male's new clan must learn to recognize the new immigrant's voice.
+
+The lack of group signatures in whoops also suggests that a simple 'group-mate or not' classification either is unnecessary given the presence of individual signatures or is insufficient for spotted hyenas to respond adaptively to these vocalizations. This is consistent with the hypothesis [@Bradbury1998] that individual signatures in vocal calls are tied to the evolution of differentiated social relationships in complex societies. Hyena society does exhibit characteristics that support the evolution of identity signaling, specifically, large group size, complex and repeated social interactions with both kin and non-kin, dominance hierarchies, and territoriality [@Tibbetts2007]. Spotted hyenas show social preferences for certain group-mates based on kinship and dominance [@Smith2006; @Holekamp1997], and social alliances can restructure the social hierarchy [@Vullioud2019] to influence rank and fitness [@Strauss2019]. Therefore, long distance calls encoding individual identity may be crucial to the functioning of hyena societies, allowing group members to manage numerous social relationships occurring over large spatial scales. The memorization of these individual signatures then provides the requisite group membership information for mediating an effective cooperative territory defense, thus obviating the need for a group signature.
+
+Interestingly, some whoop types and some individuals were more difficult than others to categorize correctly; however, we cannot disentangle whether this is a product of our dataset or whether instead it represents meaningful differences among whoop types (as in lion roar types  [@Wijers2021]) and individual voices. 'A' type whoops may be more easily classified because they are over-represented in the dataset or 'A' whoops may be more common within whoop bouts because their protracted constant frequency portion is a good indicator of individual identity (Figure \@ref(fig:featureimportance-indiv)). T whoops may have been poorly classified due to their under-representation, or they may not encode individual identity at all. The variation in individual assignment accuracy may be an artifact of the recordings we happened to obtain (e.g. our two recorded bouts happen to span the variation produced by that individual), or it might reflect real challenges that hyenas face in the wild. Some individuals (e.g. low ranking individuals) may benefit from being more difficult to identify, or the acoustic space may not be large enough to accommodate a large number of distinct signatures.
+
+## Call features adapted for long-range transmission
+
+To solve the challenge of communicating individual identity across expansive territories, evidently spotted hyenas have evolved to encode identity information in features that are particularly robust to long-range propagation. The call features that were most important for discriminating individuals included a number of frequency measures (mean frequency of the constant-frequency portion of the whoop, maximum and minimum frequency of the fundamental, and centroid frequency), call duration, and measures of noisiness (entropy) and dysphonia (CPP mean). Frequency features are common identifiers in other species with individual vocal recognition [@Shapiro2010] and other species that rely on long-range signaling appear to exhibit similar adaptations, including wolves [@Sadhukhan2021], lions [@Wijers2021], and bottlenose dolphins [@Caldwell1965]. The importance of the entropy and cepstral peak prominence measures suggest that hyenas might also attend to the biphonic components, which are common for some hyena whoops. While these features are unlikely to transmit over long distances, they are a common identifier in the voices of a number of species [@Shapiro2010]. 
+
+In addition to identifying individual hyenas, frequency features may also make it easier for hyenas to locate a whooping individual [@East1991a] as calls with a wide frequency range are expected to facilitate localization of the sound source [@Marler1955]. Low frequencies are also easier to locate in most situations [@Wiley1978] and are thus advantageous for long-distance calls that advertise the caller's location. The high frequency portions, which degrade more quickly, may allow a receiver to ascertain the distance of the caller from it while the low frequency portions of the call ensure it reaches as many receivers as possible. 
+ 
+## The value of repetition
+
+Signal redundancy has been shown to improve recognition accuracy in evolutionary agent-based models of recognition [@Tibbetts2020], so redundancy within whoop bouts likely increases both the probability of detection and the receiver's ability to identify the caller. This notion was supported by our calculations of increasing classification accuracies over the course of whoop bouts, although this increase did not reach the classification accuracies expected if each whoop was equally informative and accuracy with each additional whoop followed a Bayesian updating rule. This reduced accuracy is likely due to each whoop within a bout *not* being an independent observation. Each random forest was trained on one bout fewer than the number of bouts available for each individual. This ensured that random forest accuracy was due to individual-level, and not bout-level, characteristics, but also resulted in some bouts with low accuracy. This correlated error is certainly an artifact of our machine learning approach, but may also reflect real challenges experienced by receivers in the wild when consecutive signals have redundant information leading to correlated errors.  
+
+In systems where signalers are unable to predict how signals degrade during transmission or the amount of noise that their receivers will experience, additional repetition increases the chance that a signal will be detected and correctly decoded. It is important to note that our calculation of the prior probability that a bout belongs to any individual will be much different than the prior probabilities that a hyena will encounter in the wild. Although most spotted hyenas must discriminate between many more than the twelve individuals we distinguish here, they likely also have prior information regarding which individuals are nearby or in a particular direction. The repetition of whoops within the bout provides multiple opportunities for receivers to localize the caller [@Tenaza1977] while also deriving information from tonic features of the bout, specifically the inter-whoop-interval [@Gersick2015].
+
+This serial redundancy within whoop bouts also allows for subsequent divergence between repeated elements and co-option of a derived element for a new purpose [@Hebets2016]. For example, whoop bouts often start with a 'P' type, truncated whoop, a simple tonal call that may serve as an alerting component [@Richards1981]. Thus, it is possible that each whoop type conveys a different kind of information, that the sequence conveys information, or even that two hyenas share similar 'S' whoops and different 'A' whoops. Unfortunately, our sample size was not large enough to directly test these hypotheses here.
+
+Although there have been a number of studies on increased redundancy in calls due to increased noise in the environment, to our knowledge no studies have previously attempted to quantify the increase in accuracy of information transfer as the redundancy of the signal increases. There is an important push in the animal behavior literature to investigate degenerate signals in multimodal signaling systems [@Higham2013; @Partan2013], especially when studying the interaction between social and communicative complexity [@Peckre2019]. We suggest this should also extend to redundancy over time because animals are constantly integrating signals and new information into their decisions.
+
+## The function of advertisement whoops
+
+It is noteworthy that, although whoops are used to recruit clan-members for collective action, a large proportion (47.1% [@Theis2007] to 60% [@Mills1990]) of whoop bouts are "spontaneous" or "slow" and do not appear to recruit individuals [@Gersick2015], suggesting they serve an additional function. We concur with East and Hofer's [-@East1991a] suggestion that spontaneous whoops display the identity and location of the caller, and as such they can help hyenas keep track of conspecifics and thus simplify the task  of discriminating between conspecifics from long-range degraded signals by informing the prior probability of where conspecifics should be located. However, we also suggest that these bouts may reinforce the templates, or mental representations of calls, of receivers within hearing distance [@Wiley2006; @Guilford1991]. This function of spontaneous whoops may be especially important given that receivers must discriminate among many group-mates and between group and non-group mates with the potential for correlated error and without the benefit of a group signature. Such memory reinforcement should improve future detection and discrimination as it does in humans [@Wiley2006].
+
+# Acknowledgements
+
+We thank the Kenyan National Commission for Science, Technology and Innovation, the Narok County Government, the Mara Conservancy, and the Kenya Wildlife Service for permission to conduct our long-term study. We also thank all those who assisted with data collection in the field, and with data entry and manipulation in the lab, especially Malit O. Pioon and Sabrina Salome. This work was supported by National Science Foundation Grants OISE1853934 and IOS1755089, Carlsberg Foundation Grant CF 15-0915, and Human Frontiers Science Program Grant RGP0051/2019. KDSL was supported by a Graduate Research Fellowship from NSF. ASP received additional funding from the Gips-Schüle Stiftung, the Max Planck Institute of Animal Behaviour, and the Zukunftskolleg at the University of Konstanz. FHJ was funded through an AIAS-COFUND fellowship from Aarhus Institute of Advanced Studies under the FP7-PEOPLE programme of the EU (agreement no. 609033). 
+
+# Supplemental
+```{r mara-map, echo=FALSE, fig.height=3, fig.width=3, fig.cap="Figure S1: Map of the Mara Hyena Project study clans in the Maasai Mara, Kenya. The approximate clan boundaries are indicated by dashed lines. The Talek West (TW) territory lies on the eastern side of the Reserve, approximately 25 km from the remaining three clans which occupy adjacent territories on the western side of the Reserve: Happy Zebra (HZ), Serena South (SS), and Serena North (SN). Reproduced from Green 2015."}
+
+map <- ggdraw() + draw_image(here('doc/premadefigs/ClanMap.png'))
+map
+
+```
+
+```{r, recording-panel, echo=FALSE, fig.cap='Figure S2: Acoustic recordings were obtained from wild spotted hyenas in the field using either (A) handheld shotgun microphone and recording setup deployed from offroad vehicles, or (B) custom-made acoustic and movement recording collars sampling sound directly from the tagged animal. Observers deployed recording equipment once the vehicle was turned off and aimed the handheld directional microphone (ME-66/K6 and ME-67/K6, sensitivity: 50 mV/Pa, frequency response: 40 Hz–20 kHz; Sennheiser Electronic Corporation, Old Lyme) toward vocalizing animals within 50 meters of the car. For these recordings, observers used a Marantz PMD661 handheld solid-state recorder (Marantz America, Inc., Mahwah, NJ; Figure 8a) at sampling rates of 44.1, 48, or 96 kHz and 16 or 24-bit sampling depths. From April 2010 to January 2011 recordings were elicited via call-in playbacks (fully described in Gersick et al. 2015) and from July 2014 to April 2016 recordings were obtained opportunistically. Each collar consisted of a base Followit Wildlife (Followit AB, Lindesberg, Sweden) Medium Iridium collar with reinforced belting, integrated VHF antenna and a GPS and iridium module for transmitting location and battery state. Each collar was fitted with a secondary sound and movement module consisting of a modified digital acoustic tag (DTAG: Johnson and Tyack, 2003, Johnson et al. 2009) connected using a serial cable to a high sample rate Gipsy-5 GPS module (Technosmart Europe, Rome, Italy). This module was placed on the top of the collar and thus located on the back of the neck with the microphone facing forward and protected by an oleophobic acoustic vent (GAW325, 3.2mm ID, W. L. Gore and Associates, Elkton, MD, USA). Collars digitized sound using a sigma-delta ADC with an oversampling rate of x6, for a final 32 kHz sampling rate and 16-bit depth.', fig.width=10, dpi=400}
+
+pic1 <-ggdraw() + draw_image(here('doc/premadefigs/Picture1.png')) + draw_plot_label('A', x=0, y=.95)
+pic2 <-ggdraw() + draw_image(here('doc/premadefigs/ASP_IMG_9187.jpg')) + draw_plot_label('B', x=0, y=.95) 
+pic2 <- ggdraw(pic2) + draw_image(here('doc/premadefigs/collarclose.png'), hjust=1, x=1.3, y=0, vjust=-.25 ,scale=.45)
+plot_grid(pic1,pic2)
+
+```
+
+```{r datasets, echo=FALSE, warning=FALSE, message=FALSE}
+datasets <- (table.dataset.description)
+datasets <- datasets %>% replace(.=="NULL", "")
+
+datasets$PASTClan <- unlist(datasets$whoops.per.bout.PAST_C)
+datasets$ASClan <- unlist(datasets$whoops.per.bout.AS_C)
+datasets$PASTIndiv <- unlist(datasets$whoops.per.bout.PAST_I)
+datasets$ASIndiv <- unlist(datasets$whoops.per.bout.AS_I)
+ 
+datasets <- select(datasets, hyena, clan, sex_status, 
+                        PASTClan, ASClan, PASTIndiv, ASIndiv)
+ datasets$sex_status[datasets$sex_status=="F"] <- 'natal female'
+ datasets$sex_status[datasets$sex_status=="M"] <- 'imm. male'
+ datasets$sex_status[datasets$sex_status=="MR"] <- 'natal male'
+
+
+ colnames(datasets) <- c('hyena', 'clan', 'status & sex',
+                              'PAST Clan', 'AS Clan',
+                              'PAST Individual', 'AS Individual')
+ 
+ 
+
+
+ dataset.table <- flextable(datasets, col_keys = c('hyena', 'clan', 'status & sex', 
+                              'PAST Clan', 'AS Clan',
+                              'PAST Individual', 'AS Individual'))
+ 
+ typology <- data.frame(col_keys = c('hyena', 'clan', 'status & sex', 
+                              'PAST Clan', 'AS Clan',
+                              'PAST Individual', 'AS Individual'),
+  what = c('hyena', 'clan', 'status & sex', 
+                              'whoops per bout in dataset', 'whoops per bout in dataset',
+                              'whoops per bout in dataset', 'whoops per bout in dataset'),
+  measure = c('hyena', 'clan', 'status & sex',
+                              'PAST Clan', 'AS Clan',
+                              'PAST Individual', 'AS Individual'),
+  stringsAsFactors = FALSE )
+ 
+dataset.table <- set_header_df(dataset.table, mapping = typology, key = "col_keys" )
+dataset.table <- merge_h(dataset.table, part = "header")
+dataset.table <- merge_v(dataset.table, j = "hyena", part = "header")
+dataset.table <- merge_v(dataset.table, j = "clan", part = "header")
+dataset.table <- merge_v(dataset.table, j = "status & sex", part = "header")
+ 
+dataset.table <- bold(dataset.table, part="header")
+dataset.table <- bold(dataset.table, part="footer")
+dataset.table <- autofit(dataset.table)
+dataset.table <- set_caption(dataset.table, caption="Table S1. Summary of datasets used in random forest analyses. The clan signature hypothesis was tested with datasets composed of all whoop types (PAST Clan) and only A and S whoop types (AS Clan). The PAST Clan dataset was further divided into females only and males only datasets (see status and sex column). The individual signature hypothesis was tested with datasets composed of all whoop types (PAST Individual) and only A and S whoop types (AS Individual). The PAST Individual dataset was divided into recordings from females only, males only (see status and sex column), microphone only, and collar only. Bolded individuals' recordings were obtained from recording collars.")
+
+dataset.table <- add_footer_lines(dataset.table, top=FALSE, values="Bolded lines are data obtained from recording collars.")
+dataset.table <- add_footer_lines(dataset.table, top=FALSE, values="Italicized lines are data obtained from call-ins.")
+dataset.table <- theme_vanilla(dataset.table)
+dataset.table <- align(dataset.table, align='center', part='body')
+dataset.table <- align(dataset.table, align='center', part='header')
+collar_hyenas <- c('MGTA', 'BORA','BYTE','FAY-','WRTH')
+collared <- datasets$hyena %in% collar_hyenas
+dataset.table <- bold(dataset.table, i= collared)
+callin_hyenas <- c('ANGI', 'BADG', 'BBW-', 'BRPH', 'DUO-', 'GRIM', 'JAVA', 'JONI','KS--', 'LGO-', 'MTN-', 'PIKE',
+                   'RBC-', 'RSTR', 'SHRM', 'SILK', 'SNAP', 'SST-', 'TAJ-', 'TSU-')
+callins <- datasets$hyena %in% callin_hyenas
+dataset.table <- italic(dataset.table, i= callins)
+
+dataset.table
+
+
+```
+
+```{r, random-forest, echo=FALSE, warning=FALSE, message=FALSE, fig.width=6.5, fig.height=8, dpi=700, fig.cap="Figure S3: Random forest testing and training dataset for (A) clan signature analysis and (B) individual signatures analysis. Colored rectangles represent whoop bouts (with variable number of whoops), with box fill indicating the individual and box border indicating clan. For the clan signature analysis (A), the random forest was trained using whoops from all but one individual per clan, with the remaining individuals (one per clan) used for testing. The random forest was trained on single whoops and was blind to the individual and bout. The random forest was then used to predict the clan membership of each whoop and the proportion of correct guesses was recorded. This procedure avoids pseudo-replication of individuals, and ensures that the accuracy is not artificially inflated by the model learning signatures of the individuals comprising the clan rather than signatures of the clan itself. For the individual signatures analysis (B), the random forest was trained on whoops from all but one bout per individual, with the remaining bout held out for testing. The trained random forest model was then used to predict the caller of each whoop in the test dataset. This procedure prevents psuedo-replication of bouts and eliminates the possibility of within-bout similarities affecting the analysis of individual signatures." }
+
+pic1 <-ggdraw() + draw_image(here('doc/premadefigs/RF_clan.png'), 
+                             scale=1, x=0, y=0, halign = 0) + 
+  theme(plot.margin = unit(c(0.75, 0, 0, 0), "cm"))
+pic2 <-ggdraw() + draw_image(here('doc/premadefigs/RF_indiv.png'), 
+                             scale=1, x=0, y=0, halign=0) + 
+  theme(plot.margin = unit(c(0.75, 0, 0, 0), "cm"))
+
+
+plot_grid(pic1,pic2, nrow=2,ncol=1, labels = c('A: Clan identity hypothesis', 'B: Individual identity hypothesis'), hjust=0)
+```
+
+## Signal processing methods
+
+*Note: I've never put so much info into the Supplement. Is this the best way to do this? I kept everything in the order it's referenced in the main doc.*
+
+First, each signal was bandpass filtered using a 6-pole Butterworth filter (-3 dB cutoff points 100 Hz to 10,000 Hz) and the 99% energy duration of the signal was calculated after subtracting average noise energy. Within this time window, a power spectrum was calculated using Welch’s method (FFT size of 8192, block size 40 ms, block overlap 35 ms, Hann window), and used to estimate the peak frequency (containing most signal energy) and the centroid frequency (separating the power spectrum into two halves with equal energy).
+
+Next, a spectrogram was generated (FFT size of 8192, block size 40 ms, block overlap 35 ms, Hann window) and used to extract the fundamental frequency contour using a semi-supervised contour tracker. From the contour, 7 features were extracted: The minimum and maximum contour frequency were taken directly from the contour. The contour was segmented into an initial flat “constant-frequency” (CF) component (ending when contour frequency exceeded median frequency by more than 10% of the difference between median and maximum frequency) and an upsweep component (ending at the point of maximum frequency) and both the total duration and the relative time into call where each period ended were extracted, as well as the centroid frequency within the initial CF portion (see Figure \@ref(fig:spectrogram-panel)b-d).
+
+Some whoops contained portions with pronounced subharmonics. To find and quantify these events, the acoustic energy in the fundamental frequency, first harmonic and second harmonic (1 \cdot f0, 2 \cdot f0, 3 \cdot f0) was isolated and compared to energy in uneven harmonics (1.5 \cdot f0, 3.5 \cdot f0, 3.5 \cdot f0) using a variable-frequency filter [@Madsen2012]. For the fundamental frequency, -3 dB cutoff points for each time slice corresponded to the instantaneous fundamental frequency ± ¼ octave to get a filter width of 0.5 octave. For higher harmonics, the fundamental frequency was multiplied by harmonic number before calculating cutoff points. The total energy was summed across even harmonics and across uneven harmonics separately. Then, the ratio of energy within harmonics relative to energy within subharmonics was calculated and converted to deciBels (10 \cdot log10(E<sub>harmonics</sub>/E<sub>subharmonics</sub>) for both the entire call and for the initial constant-frequency component.
+
+Finally, the signal was downsampled to 8 kHz. For each time slice (40 ms block size, 35 ms block overlap) within the 99% energy duration of the signal, we calculated the spectral entropy [@Misra2004] and cepstral peak prominence [@Heman-Ackah2014; @Soltis2005] and finally we calculated the mean spectral entropy and cepstral peak prominence across the entire signal.
+
+```{r CM-clan, echo=FALSE, warning=FALSE, message=FALSE, fig.height=8, fig.width=8.5,  fig.cap="Figure S4: Confusion matrices for clan signature. (A) Using all whoop types. (B) Using only A and S type whoops. (C) Using all whoop types from females only. (D) Using all whoop types from males only. Rows represent true categories while columns represent the random forest assignments. Each row shows how the random forest classified calls for that particular clan. Each cell represents the percentage of calls that were assigned to the column category from the true category. Guesses that lie along the diagnal are correct assignments while guesses on either side of the diagnal are incorrect assignments. Numbers in white text show the percentage of calls assigned to category x (row x) when it came from category y (row y)."}
+
+#Put rownames in a column in prep for making data long for ggplot
+confMatrix.clan.PAST$guess <- rownames(confMatrix.clan.PAST)
+confMatrix.clan.PAST.female$guess <- rownames(confMatrix.clan.PAST.female)
+confMatrix.clan.PAST.male$guess <- rownames(confMatrix.clan.PAST.male)
+confMatrix.clan.AS$guess <- rownames(confMatrix.clan.AS)
+
+#Make datasets long for ggplot
+confMatrix.clan.PAST <- gather(confMatrix.clan.PAST, correct, percent, HZ:TW, factor_key = TRUE)
+confMatrix.clan.PAST.female <- gather(confMatrix.clan.PAST.female, correct, percent, HZ:TW, factor_key = TRUE)
+confMatrix.clan.PAST.male <- gather(confMatrix.clan.PAST.male, correct, percent, HZ:TW, factor_key = TRUE)
+confMatrix.clan.AS <- gather(confMatrix.clan.AS, correct, percent, HZ:TW, factor_key = TRUE)
+
+#Round percents for legibility
+confMatrix.clan.PAST$percent <- round(confMatrix.clan.PAST$percent*100, 0)
+confMatrix.clan.PAST.female$percent <- round(confMatrix.clan.PAST.female$percent*100, 0)
+confMatrix.clan.PAST.male$percent <- round(confMatrix.clan.PAST.male$percent*100, 0)
+confMatrix.clan.AS$percent <- round(confMatrix.clan.AS$percent*100, 0)
+
+legend <- get_legend(ggplot(confMatrix.clan.PAST, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent)) +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1.5,.5,.5,.5), "cm")) +
+  coord_cartesian(clip='off') +
+  geom_label(x=2.5, y=4.75, label="   all whoops   ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5) +
+  xlab(""))
+
+hm.clan.A <- ggplot(confMatrix.clan.PAST, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  geom_label(x=2.5, y=4.75, label="   all whoops   ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5) +
+  xlab("") 
+
+  
+
+hm.clan.B <- ggplot(confMatrix.clan.AS, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  geom_label(x=2.5, y=4.75, label=" A and S whoops ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5) +
+  ylab("") + xlab("")
+
+hm.clan.C <- ggplot(confMatrix.clan.PAST.female, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  geom_label(x=2.5, y=4.75, label=" all whoops, females only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5) 
+
+hm.clan.D <- ggplot(confMatrix.clan.PAST.male, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  geom_label(x=2.5, y=4.75, label=" all whoops, males only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5) +
+  ylab("") 
+
+
+confMatrices <- cowplot::plot_grid(hm.clan.A, hm.clan.B, hm.clan.C, hm.clan.D, ncol=2, nrow=2,
+                                   axis = 'lrbt',
+                                   align = 'vh',
+                                   labels=c('AUTO'))
+
+cowplot::plot_grid(confMatrices, legend,
+          ncol=2, rel_widths=c(1,.25))
+
+
+```
+
+
+```{r CM-ind-PAST, echo=FALSE, fig.height=11, fig.width=8.5, dpi=100, units='in', fig.cap="Figure S5: Confusion matrix for individual signature (A) Using all whoop types, (B) Using only A and S type whoops, (C) Using all whoop types from females only, (D) Using all whoop types from males only, (E) Using all whoop types from microphone recordings, (F) Using all whoop types from collar recordings. Rows represent true categories while columns represent the random forest assignments. Each row shows how the random forest classified calls for that particular clan. Each cell represents the percentage of calls that were assigned to the column category from the true category. Guesses that lie along the diagnal are correct assignments while guesses on either side of the diagnal are incorrect assignments. Numbers in white text show the percentage of calls assigned to category x (row x) when it came from category y (row y)."}
+
+#Put rownames in a column in prep for making data long for ggplot
+confMatrix.indiv.PAST$guess <- rownames(confMatrix.indiv.PAST)
+confMatrix.indiv.AS$guess <- rownames(confMatrix.indiv.AS)
+confMatrix.indiv.PAST.female$guess <- rownames(confMatrix.indiv.PAST.female)
+confMatrix.indiv.PAST.male$guess <- rownames(confMatrix.indiv.PAST.male)
+confMatrix.indiv.PAST.mic$guess <- rownames(confMatrix.indiv.PAST.mic)
+confMatrix.indiv.PAST.col$guess <- rownames(confMatrix.indiv.PAST.col)
+
+#Make datasets long for ggplot
+confMatrix.indiv.PAST <- gather(confMatrix.indiv.PAST, correct, percent, ANNR:WRTH, factor_key = TRUE)
+confMatrix.indiv.AS <- gather(confMatrix.indiv.AS, correct, percent, ANNR:WRTH, factor_key = TRUE)
+confMatrix.indiv.PAST.female <- gather(confMatrix.indiv.PAST.female, correct, percent, BRPH:WRTH, factor_key = TRUE)
+confMatrix.indiv.PAST.male <- gather(confMatrix.indiv.PAST.male, correct, percent, ANNR:RSWL, factor_key = TRUE)
+confMatrix.indiv.PAST.mic <- gather(confMatrix.indiv.PAST.mic, correct, percent, ANNR:TWST, factor_key = TRUE)
+confMatrix.indiv.PAST.col <- gather(confMatrix.indiv.PAST.col, correct, percent, BORA:WRTH, factor_key = TRUE)
+
+#Reorder the columns and rows in the dataset so clans and sexes are together.
+ord <- levels(violin.ind.PAST$hyena)
+ord <- ord[3:length(ord)]
+
+confMatrix.indiv.PAST$guess <- factor(confMatrix.indiv.PAST$guess, levels=ord)
+confMatrix.indiv.PAST$correct <- factor(confMatrix.indiv.PAST$correct, levels=ord)
+
+confMatrix.indiv.AS$guess <- factor(confMatrix.indiv.AS$guess, levels=ord)
+confMatrix.indiv.AS$correct <- factor(confMatrix.indiv.AS$correct, levels=ord)
+
+confMatrix.indiv.PAST.female$guess <- factor(confMatrix.indiv.PAST.female$guess, levels=ord)
+confMatrix.indiv.PAST.female$correct <- factor(confMatrix.indiv.PAST.female$correct, levels=ord)
+
+confMatrix.indiv.PAST.male$guess <- factor(confMatrix.indiv.PAST.male$guess, levels=ord)
+confMatrix.indiv.PAST.male$correct <- factor(confMatrix.indiv.PAST.male$correct, levels=ord)
+
+confMatrix.indiv.PAST.mic$guess <- factor(confMatrix.indiv.PAST.mic$guess, levels=ord)
+confMatrix.indiv.PAST.mic$correct <- factor(confMatrix.indiv.PAST.mic$correct, levels=ord)
+
+confMatrix.indiv.PAST.col$guess <- factor(confMatrix.indiv.PAST.col$guess, levels=ord)
+confMatrix.indiv.PAST.col$correct <- factor(confMatrix.indiv.PAST.col$correct, levels=ord)
+
+#Round percents for legibility
+confMatrix.indiv.PAST$percent <- round(confMatrix.indiv.PAST$percent*100, 0)
+confMatrix.indiv.AS$percent <- round(confMatrix.indiv.AS$percent*100, 0)
+confMatrix.indiv.PAST.female$percent <- round(confMatrix.indiv.PAST.female$percent*100, 0)
+confMatrix.indiv.PAST.male$percent <- round(confMatrix.indiv.PAST.male$percent*100, 0)
+confMatrix.indiv.PAST.mic$percent <- round(confMatrix.indiv.PAST.mic$percent*100, 0)
+confMatrix.indiv.PAST.col$percent <- round(confMatrix.indiv.PAST.col$percent*100, 0)
+
+#Set colors for clan membership and boldness for sex.
+#Get hyena,clan,sex 
+labelinfo <- select(whoopsPAST_I, hyena, clan, sexstatus)
+labelinfo <- unique(labelinfo)
+#set the colors for clans
+labelinfo$clan[labelinfo$clan==1] <- 'black'
+labelinfo$clan[labelinfo$clan==2] <- 'blue3'
+labelinfo$clan[labelinfo$clan==3] <- 'green4'
+labelinfo$clan[labelinfo$clan==4] <- 'purple4'
+#set the font type for sex
+labelinfo$sexstatus[labelinfo$sexstatus=='F'] <- 'bold'
+labelinfo$sexstatus[labelinfo$sexstatus=='M'] <- 'italic'
+
+#order it correctly
+labelinfo$hyena <- factor(labelinfo$hyena, levels=ord)
+labelinfo <- labelinfo[order(labelinfo$hyena),]
+
+#get the number of labels correctly for each future plot.
+labelinfoB <- labelinfo[labelinfo$hyena %in% confMatrix.indiv.AS$guess,]
+labelinfoC <- labelinfo[labelinfo$hyena %in% confMatrix.indiv.PAST.female$guess,]
+labelinfoD <- labelinfo[labelinfo$hyena %in% confMatrix.indiv.PAST.male$guess,]
+labelinfoE <- labelinfo[labelinfo$hyena %in% confMatrix.indiv.PAST.mic$guess,]
+labelinfoF <- labelinfo[labelinfo$hyena %in% confMatrix.indiv.PAST.col$guess,]
+
+
+hm.indiv.A <- ggplot(confMatrix.indiv.PAST, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfo$clan), face = c(labelinfo$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfo$clan), face = c(labelinfo$sexstatus))) +
+  geom_label(x=7, y=13.5, label="   all whoops   ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) +
+  xlab("") 
+
+hm.indiv.B <- ggplot(confMatrix.indiv.AS, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfoB$clan), face = c(labelinfoB$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfoB$clan), face = c(labelinfoB$sexstatus))) +
+  geom_label(x=6.5, y=12.5, label=" A and S whoops ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) +
+  ylab("") + xlab("")
+
+hm.indiv.C <- ggplot(confMatrix.indiv.PAST.female, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfoC$clan), face = c(labelinfoC$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfoC$clan), face = c(labelinfoC$sexstatus))) +
+  geom_label(x=4, y=7.5, label=" all whoops, females only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) +
+  xlab("")
+
+hm.indiv.D <- ggplot(confMatrix.indiv.PAST.male, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfoD$clan), face = c(labelinfoD$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfoD$clan), face = c(labelinfoD$sexstatus))) +
+  geom_label(x=3.5, y=6.5, label=" all whoops, males only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) +
+  ylab("") + xlab("") 
+
+hm.indiv.E <- ggplot(confMatrix.indiv.PAST.mic, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfoE$clan), face = c(labelinfoE$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfoE$clan), face = c(labelinfoE$sexstatus))) +
+  geom_label(x=5.5, y=10.5, label=" all whoops, microphone only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) 
+
+hm.indiv.F <- ggplot(confMatrix.indiv.PAST.col, aes(x=guess, y=correct)) +
+  geom_tile(aes(fill=percent)) +
+  geom_text(aes(label=percent), color='white') +
+  scale_fill_continuous(limits=c(0,100)) + 
+  theme(plot.margin = unit(c(1,.25,0,0), "cm")) +
+  coord_cartesian(clip='off') + 
+  theme(legend.position = 'none') +
+  theme(axis.text.x = element_text(angle = 60, hjust = 1, 
+                                   color = c(labelinfoF$clan), face = c(labelinfoF$sexstatus))) +
+  theme(axis.text.y = element_text(color = c(labelinfoF$clan), face = c(labelinfoF$sexstatus))) +
+  geom_label(x=2, y=3.5, label=" all whoops, collar only ", 
+             label.r = unit(0,'lines'), 
+             label.padding = unit(0.4, 'lines'), 
+             label.size = 0.5, vjust = 0) +
+  ylab("") 
+
+
+confMatrices <- cowplot::plot_grid(hm.indiv.A, hm.indiv.B, hm.indiv.C, hm.indiv.D, hm.indiv.E, hm.indiv.F,
+                                   ncol=2, nrow=3,
+                                   axis = 'lrbt',
+                                   align = 'vh',
+                                   labels=c('AUTO'))
+
+cowplot::plot_grid(confMatrices, legend,
+          ncol=2, rel_widths=c(1,.25))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# References
