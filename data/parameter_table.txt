@@ -1,0 +1,17 @@
+Abbreviation,Measurement,Units
+dur,Duration of call (99% energy criterion),[seconds]
+dur.cf,Duration of constant-frequency (CF) component,[seconds]
+dur.upsweep,Duration of upsweep (until max frequency),[seconds]
+dur.subharm,Duration of call with dominant subharmonics (Energy > harmonics),[seconds]
+endtime.cf,End time of CF component relative to call,[fraction of call]
+endtime.upsweep,End time of upsweep (max frequency) relative to call,[fraction of call] 
+freq.centroid,Centroid frequency,[kHz]
+freq.peak,Peak frequency,[kHz]
+freq.min,Min fundamental frequency,[kHz]
+freq.max,Max fundamental frequency,[kHz]
+freq.mean.cf,Mean fundamental frequency within CF component,[kHz]
+harmonic.ratio.total,Harmonic to subharmonic energy ratio within entire call,[dB]
+harmonic.ratio.cf,Harmonic to subharmonic energy ratio within CF component,[dB]
+mean.entropy,Mean spectral entropy within 99% energy duration,[0(pure tone) to 1(white noise)]
+cpp.mean,Mean cepstral peak prominence,
+cpp.sd,Standard deviation of cepstral peak prominence across time slices,

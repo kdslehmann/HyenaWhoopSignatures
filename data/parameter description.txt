@@ -1,0 +1,29 @@
+Data matrix of whoop parameters:
+
+Contains:
+
+Column
+1       ID of individual (categorical)
+2       ID of bout for each individual (categorical)
+Temporal metrics
+3       Duration of call (99% energy criterion)     [seconds]
+4       Duration of constant-frequency component    [seconds]
+5       Duration of upsweep (until max frequency)   [seconds]
+6       Duration of call with dominant subharmonics (Energy > harmonics) [seconds]
+7       End time of constant frequency component (relative to call) [Fraction]  [May not need]
+8       End time of upsweep (max frequency) relative to call        [Fraction]	[May not need]
+10      Centroid frequency          [kHz]
+11      Peak frequency              [kHz]
+12      Min fundamental frequency   [kHz]
+13      Max fundamental frequency   [kHz]
+14      Mean fundamental frequency within CF component  [kHz]
+15      Ratio of harmonic to subharmonic energy within entire call [dB]
+16      Ratio of harmonic to subharmonic energy within CF component [dB]
+17      Mean spectral entropy within 99% energy duration [unitless?]
+18	Cepstral Peak Prominence Mean 
+19	Cepstral Peak Prominence Standard Deviation
+9       Center time of wobble  [seconds relative to peak of upsweep]
+Spectral metrics (all 6 Hz resolution)
+
+Used Voice Sauce for CPP measures. Used same window parameters to calculate CPP of each time slice. Calculated mean and SD. 
+
